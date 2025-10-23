@@ -1,0 +1,78 @@
+name: Generate PDF
+
+on:
+  push:
+    branches: [ "main" ]
+
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Merge Markdown and Generate PDF
+        run: |-
+          npm install -g md-to-pdf
+          mkdir -p pdf
+
+          # Create combined markdown
+          echo "# MateMate Architecture Framework - Complete Documentation" > combined.md
+          echo "" >> combined.md
+
+          # Add main README
+          if [ -f README.md ]; then
+            cat README.md >> combined.md
+            echo -e "\n\n---\n\n" >> combined.md
+          fi
+
+          # Add C4 diagrams
+          echo "# C4 Architecture Views" >> combined.md
+          echo "" >> combined.md
+          for f in c4/*.md; do
+            if [ -f "$f" ]; then
+              cat "$f" >> combined.md
+              echo -e "\n\n---\n\n" >> combined.md
+            fi
+          done
+
+          # Add arc42 chapters
+          echo "# arc42 Documentation" >> combined.md
+          echo "" >> combined.md
+          for f in arc42/0*.md; do
+            if [ -f "$f" ]; then
+              cat "$f" >> combined.md
+              echo -e "\n\n---\n\n" >> combined.md
+            fi
+          done
+
+          # Add requirements
+          echo "# Requirements" >> combined.md
+          echo "" >> combined.md
+          for f in req/*.md; do
+            if [ -f "$f" ]; then
+              cat "$f" >> combined.md
+              echo -e "\n\n---\n\n" >> combined.md
+            fi
+          done
+
+          # Add documentation
+          echo "# Framework Documentation" >> combined.md
+          echo "" >> combined.md
+          for f in docs/*.md; do
+            if [ -f "$f" ]; then
+              cat "$f" >> combined.md
+              echo -e "\n\n---\n\n" >> combined.md
+            fi
+          done
+
+          # Convert to PDF
+          cat combined.md | md-to-pdf --basedir . > pdf/MateMate-Framework-Complete.pdf
+
+      - name: Upload PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: matemate-framework
+          path: pdf
