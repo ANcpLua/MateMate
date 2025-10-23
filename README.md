@@ -7,7 +7,7 @@ Organized documentation following C4 + arc42 principles with additional concepts
 1. **Requirements** → `req/` - Start here for subsystems, services, dependencies
 2. **C4 Diagrams** → `c4/` - Visual architecture (system context, containers)
 3. **arc42 Chapters** → `arc42/` - Detailed documentation
-4. **Framework Docs** → `docs/` - New concepts, visual semantics, review guide
+4. **Framework Docs** → `docs/` - New concepts, visual semantics
 
 ## Directory Structure
 
@@ -35,8 +35,7 @@ Organized documentation following C4 + arc42 principles with additional concepts
     ├── new-concepts.md          # 2 innovative concepts
     ├── allowed-to-use-matrix.md # Binary dependency matrix
     ├── change-impact-heatmap.md # Scenario-based impact analysis
-    ├── visual-semantics.md      # Diagram visual definitions
-    └── review-usage.md          # 4-step review process
+    └── visual-semantics.md      # Diagram visual definitions
 ```
 
 ## Framework Overview
@@ -64,4 +63,3 @@ Organized documentation following C4 + arc42 principles with additional concepts
 - **[allowed-to-use-matrix.md](docs/allowed-to-use-matrix.md)** - 5×5 binary permission matrix
 - **[change-impact-heatmap.md](docs/change-impact-heatmap.md)** - 5 pre-analyzed change scenarios
 - **[visual-semantics.md](docs/visual-semantics.md)** - Color, line, shape definitions for diagrams
-- **[review-usage.md](docs/review-usage.md)** - 4-step architecture review process

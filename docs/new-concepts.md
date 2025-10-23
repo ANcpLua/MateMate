@@ -10,7 +10,7 @@ Two concepts added to standard C4/arc42 that are genuinely new:
 - C4 shows dependencies but has no permission concept
 - arc42 documents dependencies but doesn't enforce via matrix
 
-**Innovation**: Explicit ✓/✗ matrix makes violations immediately visible during review. This is a CONTRACT, not just documentation.
+**Innovation**: Explicit ✓/✗ matrix makes violations immediately visible. This is a CONTRACT, not just documentation.
 
 **Content**: See [allowed-to-use-matrix.md](allowed-to-use-matrix.md) for complete matrix
 
