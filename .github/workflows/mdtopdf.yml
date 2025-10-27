@@ -68,8 +68,8 @@ jobs:
             fi
           done
 
-          # Convert to PDF
-          cat combined.md | md-to-pdf --basedir . > pdf/MateMate-Framework-Complete.pdf
+          # Convert to PDF with Chrome flags for GitHub Actions
+          cat combined.md | md-to-pdf --basedir . --launch-options '{"args":["--no-sandbox","--disable-setuid-sandbox"]}' > pdf/MateMate-Framework-Complete.pdf
 
       - name: Upload PDF
         uses: actions/upload-artifact@v4
