@@ -18,6 +18,9 @@ jobs:
           npm install -g md-to-pdf
           mkdir -p pdf
 
+          # Ensure all images are accessible
+          ls -la c4/images/ || echo "No C4 images found"
+
           # Create combined markdown
           echo "# MateMate Architecture Framework - Complete Documentation" > combined.md
           echo "" >> combined.md
@@ -28,12 +31,13 @@ jobs:
             echo -e "\n\n---\n\n" >> combined.md
           fi
 
-          # Add C4 diagrams
+          # Add C4 diagrams (remove PlantUML blocks and fix image paths)
           echo "# C4 Architecture Views" >> combined.md
           echo "" >> combined.md
           for f in c4/*.md; do
             if [ -f "$f" ]; then
-              cat "$f" >> combined.md
+              # Remove PlantUML code blocks and fix image paths
+              sed '/```plantuml/,/```/d' "$f" | sed 's|images/|c4/images/|g' >> combined.md
               echo -e "\n\n---\n\n" >> combined.md
             fi
           done
@@ -67,6 +71,9 @@ jobs:
               echo -e "\n\n---\n\n" >> combined.md
             fi
           done
+
+          # Remove any localhost URLs from the combined markdown
+          sed -i 's|http://localhost:[0-9]*/||g' combined.md
 
           # Convert to PDF with Chrome flags for GitHub Actions
           cat combined.md | md-to-pdf --basedir . --launch-options='{"args":["--no-sandbox","--disable-setuid-sandbox","--disable-gpu","--disable-dev-shm-usage"]}' > pdf/MateMate-Framework-Complete.pdf
