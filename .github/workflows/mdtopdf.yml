@@ -76,23 +76,21 @@ jobs:
           REPO_URL="https://github.com/ANcpLua/MateMate/blob/master"
 
           # Match [text](path) but not ![text](path) by ensuring no ! before [
-          # Handle direct directory paths: ](req/, ](c4/, ](arc42/, ](docs/
-          sed -i "s|\([^!]\)\[\([^]]*\)\](req/|\1[\2]($REPO_URL/req/|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](c4/|\1[\2]($REPO_URL/c4/|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](arc42/|\1[\2]($REPO_URL/arc42/|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](docs/|\1[\2]($REPO_URL/docs/|g" combined.md
+          # Handle direct directory paths with files: ](req/file.md, ](c4/file.md, etc.
+          sed -i "s|\([^!]\)\[\([^]]*\)\](\(req/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
+          sed -i "s|\([^!]\)\[\([^]]*\)\](\(c4/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
+          sed -i "s|\([^!]\)\[\([^]]*\)\](\(arc42/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
+          sed -i "s|\([^!]\)\[\([^]]*\)\](\(docs/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
 
-          # Handle parent directory references: ](../req/, ](../arc42/, ](../docs/
-          sed -i "s|\([^!]\)\[\([^]]*\)\](\.\./req/|\1[\2]($REPO_URL/req/|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](\.\./arc42/|\1[\2]($REPO_URL/arc42/|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](\.\./docs/|\1[\2]($REPO_URL/docs/|g" combined.md
+          # Handle parent directory references: ](../req/file.md, ](../docs/file.md, etc.
+          sed -i "s|\([^!]\)\[\([^]]*\)\](\.\./\(req/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
+          sed -i "s|\([^!]\)\[\([^]]*\)\](\.\./\(c4/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
+          sed -i "s|\([^!]\)\[\([^]]*\)\](\.\./\(arc42/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
+          sed -i "s|\([^!]\)\[\([^]]*\)\](\.\./\(docs/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
 
-          # Handle specific same-directory references in docs/
-          sed -i "s|\([^!]\)\[\([^]]*\)\](allowed-to-use-matrix\.md)|\1[\2]($REPO_URL/docs/allowed-to-use-matrix.md)|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](change-impact-heatmap\.md)|\1[\2]($REPO_URL/docs/change-impact-heatmap.md)|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](sustainability-and-resource-impact\.md)|\1[\2]($REPO_URL/docs/sustainability-and-resource-impact.md)|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](finops-and-cost-governance\.md)|\1[\2]($REPO_URL/docs/finops-and-cost-governance.md)|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](visual-semantics\.md)|\1[\2]($REPO_URL/docs/visual-semantics.md)|g" combined.md
+          # Handle same-directory references (any .md file without path prefix)
+          # This catches all [text](filename.md) patterns where filename doesn't start with http/https
+          sed -i "s|\([^!]\)\[\([^]]*\)\](\([a-z0-9_-]*\.md\))|\1[\2]($REPO_URL/docs/\3)|g" combined.md
 
           # Debug: show samples of processed markdown
           echo "=== Sample of GitHub links (should have https://github.com) ==="
@@ -102,7 +100,7 @@ jobs:
           grep -E '!\[.*\]\(' combined.md | head -3 || echo "No image references found"
           echo ""
           echo "=== Checking for any remaining unprocessed relative links ==="
-          grep -E '\]\((\.\./|allowed-to-use|change-impact|sustainability-and-resource|finops-and-cost|visual-semantics)' combined.md | head -3 || echo "No unprocessed links found (good!)"
+          grep -E '\]\((\.\./|[a-z0-9_-]+\.md)' combined.md | grep -v 'http' | head -3 || echo "No unprocessed links found (good!)"
 
           # Convert to PDF with Chrome flags for GitHub Actions
           cat combined.md | md-to-pdf --basedir . --launch-options='{"args":["--no-sandbox","--disable-setuid-sandbox","--disable-gpu","--disable-dev-shm-usage"]}' > pdf/MateMate-Framework-Complete.pdf
