@@ -27,11 +27,9 @@ Organized documentation following C4 + arc42 principles with MateMate-specific e
 │                                   # Dependency rules and data flows
 │
 ├── c4/                            # C4 Architecture
-│   ├── c1-system-context.md       # Level 1 (System Context / C1)
-│   ├── c2-container-view.md       # Level 2 (Container View / C2)
-│   └── images/
-│       ├── c1.png                 # MateMate System Context
-│       └── c2.png                 # MateMate Container View
+│   ├── c1-system-context.md       # Level 1 (System Context / C1) with PlantUML
+│   ├── c2-container-view.md       # Level 2 (Container View / C2) with PlantUML
+│   └── images/                    # Generated diagrams (not in git)
 │
 ├── arc42/                         # arc42 Documentation
 │   ├── 01-introduction.md         # Chapter 1
@@ -45,8 +43,7 @@ Organized documentation following C4 + arc42 principles with MateMate-specific e
     ├── change-impact-heatmap.md           # Scenario-based impact analysis
     ├── sustainability-and-resource-impact.md
     │                                      # Runtime footprint per subsystem
-    ├── finops-and-cost-governance.md      # Cost pressure per subsystem
-    └── visual-semantics.md                # Diagram colors, shapes, legend
+    └── finops-and-cost-governance.md      # Cost pressure per subsystem
 ```
 
 ## Requirements (req/)
@@ -59,11 +56,10 @@ Organized documentation following C4 + arc42 principles with MateMate-specific e
 
 ## C4 Architecture (c4/)
 - **[c1-system-context.md](c4/c1-system-context.md)**
-  System boundary and external actor.
+  System boundary and external actor. Contains PlantUML source code.
 - **[c2-container-view.md](c4/c2-container-view.md)**
-  Internal containers and data flows.
-- **[images/c1.png](c4/images/c1.png)** and **[images/c2.png](c4/images/c2.png)**
-  Rendered diagrams.
+  Internal containers and data flows. Contains PlantUML source code.
+- **images/** - Diagrams auto-generated from PlantUML during PDF build (not in git).
 
 ## arc42 Documentation (arc42/)
 - **[01-introduction.md](arc42/01-introduction.md)**
@@ -90,5 +86,3 @@ Organized documentation following C4 + arc42 principles with MateMate-specific e
   Runtime cost profile (always-on, compute intensity, data growth).
 - **[finops-and-cost-governance.md](docs/finops-and-cost-governance.md)**
   Cost sensitivity per subsystem.
-- **[visual-semantics.md](docs/visual-semantics.md)**
-  Color/shape legend for diagrams.

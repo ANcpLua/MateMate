@@ -3,7 +3,6 @@ name: Generate PDF
 on:
   push:
     branches: [ "master" ]
-
   workflow_dispatch:
 
 jobs:
@@ -13,100 +12,111 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Merge Markdown and Generate PDF
-        run: |-
+      - name: Setup Java and Graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+          wget -q -O plantuml.jar https://github.com/plantuml/plantuml/releases/download/v1.2024.8/plantuml-1.2024.8.jar
+
+      - name: Generate PlantUML diagrams
+        run: |
+          for dir in c4 arc42 docs req; do
+            [ -d "$dir" ] || continue
+            mkdir -p "$dir/images"
+
+            for md in "$dir"/*.md; do
+              [ -f "$md" ] || continue
+
+              # Find image reference in markdown (simple grep)
+              png=$(grep '!\[.*\](images/' "$md" | head -1 | sed 's/.*images\/\([^)]*\).*/\1/')
+              [ -z "$png" ] && png="$(basename "$md" .md).png"
+
+              # Extract PlantUML code block
+              sed -n '/^```plantuml$/,/^```$/p' "$md" | sed '1d;$d' > "$dir/images/${png%.png}.puml"
+
+              # Generate PNG if puml file has content
+              if [ -s "$dir/images/${png%.png}.puml" ]; then
+                echo "Generating $dir/images/${png%.png}.png"
+                java -DPLANTUML_SECURITY_PROFILE=ALLOWLIST \
+                     -Dplantuml.allowlist.url="https://raw.githubusercontent.com/" \
+                     -jar plantuml.jar -tpng "$dir/images/${png%.png}.puml"
+                rm "$dir/images/${png%.png}.puml"
+              fi
+            done
+          done
+
+          # List generated diagrams
+          find . -path "*/images/*.png" -type f || true
+
+      - name: Combine markdown files
+        run: |
+          {
+            # Add README (already has title)
+            if [ -f README.md ]; then
+              cat README.md
+              echo ""
+              echo "---"
+              echo ""
+            fi
+
+            # Add sections in order
+            for dir in c4 arc42 req docs; do
+              [ -d "$dir" ] || continue
+
+              echo "# ${dir^^}"
+              echo ""
+
+              for f in "$dir"/*.md; do
+                [ -f "$f" ] || continue
+                # Remove PlantUML code blocks, fix image paths
+                sed '/```plantuml/,/```/d' "$f" | sed "s|](images/|](${dir}/images/|g"
+                echo ""
+                echo "---"
+                echo ""
+              done
+            done
+          } > combined.md
+
+          # Convert relative markdown links to GitHub URLs
+          REPO="https://github.com/ANcpLua/MateMate/blob/master"
+          sed -i "s|\](\([a-z0-9/_-]*\.md\))|](${REPO}/\1)|g" combined.md
+          sed -i "s|\](\.\./\([^)]*\.md\))|](${REPO}/\1)|g" combined.md
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Convert to PDF and HTML
+        run: |
           npm install -g md-to-pdf
           mkdir -p pdf
 
-          # Ensure all images are accessible
-          ls -la c4/images/ || echo "No C4 images found"
+          # Generate PDF
+          md-to-pdf combined.md \
+            --basedir . \
+            --pdf-options '{"format":"A4","margin":"20mm","printBackground":true}' \
+            --launch-options '{"args":["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage"]}'
 
-          # Create combined markdown
-          echo "# MateMate Architecture Framework - Complete Documentation" > combined.md
-          echo "" >> combined.md
+          # Generate HTML with styling
+          md-to-pdf combined.md \
+            --basedir . \
+            --as-html \
+            --css "body { max-width: 1200px; margin: 0 auto; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; } h1, h2 { border-bottom: 1px solid #eee; padding-bottom: 10px; } h1 { text-align: center; } table { width: 100%; border-collapse: collapse; margin: 20px 0; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } th { background-color: #f5f5f5; } img { max-width: 100%; height: auto; display: block; margin: 20px auto; } code { background: #f5f5f5; padding: 2px 5px; border-radius: 3px; } pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }" \
+            --launch-options '{"args":["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage"]}'
 
-          # Add main README
-          if [ -f README.md ]; then
-            cat README.md >> combined.md
-            echo -e "\n\n---\n\n" >> combined.md
-          fi
+          # Move outputs to pdf directory
+          mv combined.pdf pdf/MateMate-Framework-Complete.pdf
+          mv combined.html pdf/MateMate-Framework-Complete.html
 
-          # Add C4 diagrams (remove PlantUML blocks and fix image paths)
-          echo "# C4 Architecture Views" >> combined.md
-          echo "" >> combined.md
-          for f in c4/*.md; do
-            if [ -f "$f" ]; then
-              # Remove PlantUML code blocks and fix image paths
-              sed '/```plantuml/,/```/d' "$f" | sed 's|images/|c4/images/|g' >> combined.md
-              echo -e "\n\n---\n\n" >> combined.md
-            fi
+          # Copy image directories with correct structure for HTML
+          for dir in c4 arc42 req docs; do
+            [ -d "$dir/images" ] && mkdir -p "pdf/$dir" && cp -r "$dir/images" "pdf/$dir/"
           done
 
-          # Add arc42 chapters
-          echo "# arc42 Documentation" >> combined.md
-          echo "" >> combined.md
-          for f in arc42/0*.md; do
-            if [ -f "$f" ]; then
-              cat "$f" >> combined.md
-              echo -e "\n\n---\n\n" >> combined.md
-            fi
-          done
-
-          # Add requirements
-          echo "# Requirements" >> combined.md
-          echo "" >> combined.md
-          for f in req/*.md; do
-            if [ -f "$f" ]; then
-              cat "$f" >> combined.md
-              echo -e "\n\n---\n\n" >> combined.md
-            fi
-          done
-
-          # Add documentation
-          echo "# Framework Documentation" >> combined.md
-          echo "" >> combined.md
-          for f in docs/*.md; do
-            if [ -f "$f" ]; then
-              cat "$f" >> combined.md
-              echo -e "\n\n---\n\n" >> combined.md
-            fi
-          done
-
-          # Convert relative links to GitHub repository links (but NOT image references)
-          REPO_URL="https://github.com/ANcpLua/MateMate/blob/master"
-
-          # Match [text](path) but not ![text](path) by ensuring no ! before [
-          # Handle direct directory paths with files: ](req/file.md, ](c4/file.md, etc.
-          sed -i "s|\([^!]\)\[\([^]]*\)\](\(req/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](\(c4/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](\(arc42/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](\(docs/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
-
-          # Handle parent directory references: ](../req/file.md, ](../docs/file.md, etc.
-          sed -i "s|\([^!]\)\[\([^]]*\)\](\.\./\(req/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](\.\./\(c4/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](\.\./\(arc42/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
-          sed -i "s|\([^!]\)\[\([^]]*\)\](\.\./\(docs/[^)]*\.md\))|\1[\2]($REPO_URL/\3)|g" combined.md
-
-          # Handle same-directory references (any .md file without path prefix)
-          # This catches all [text](filename.md) patterns where filename doesn't start with http/https
-          sed -i "s|\([^!]\)\[\([^]]*\)\](\([a-z0-9_-]*\.md\))|\1[\2]($REPO_URL/docs/\3)|g" combined.md
-
-          # Debug: show samples of processed markdown
-          echo "=== Sample of GitHub links (should have https://github.com) ==="
-          grep -E '[^!]\[.*\]\(http' combined.md | head -5 || echo "No http links found"
-          echo ""
-          echo "=== Sample of image references (should have local paths) ==="
-          grep -E '!\[.*\]\(' combined.md | head -3 || echo "No image references found"
-          echo ""
-          echo "=== Checking for any remaining unprocessed relative links ==="
-          grep -E '\]\((\.\./|[a-z0-9_-]+\.md)' combined.md | grep -v 'http' | head -3 || echo "No unprocessed links found (good!)"
-
-          # Convert to PDF with Chrome flags for GitHub Actions
-          cat combined.md | md-to-pdf --basedir . --launch-options='{"args":["--no-sandbox","--disable-setuid-sandbox","--disable-gpu","--disable-dev-shm-usage"]}' > pdf/MateMate-Framework-Complete.pdf
-
-      - name: Upload PDF
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: matemate-framework
-          path: pdf
+          path: pdf/
+          retention-days: 90

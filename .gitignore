@@ -1,0 +1,10 @@
+# Generated PlantUML diagrams (artifacts, not source)
+**/images/*.png
+
+# IDE
+.DS_Store
+.idea/
+
+# Build artifacts
+combined.md
+pdf/

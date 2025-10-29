@@ -4,23 +4,20 @@
 
 ## Containers
 
-1. **K1 Presentation.InputAdapter** (T)
-2. **K2 Presentation.RenderingEngine** (T)
-3. **K3 Application.InteractionController** (A)
-4. **K4 Domain.AnalysisService** (A)
-5. **K5 Core.PositionStore** (0)
+| ID | Name | Blood Type | Role |
+|----|------|------------|------|
+| K1 | InputAdapter | T | Captures input events |
+| K2 | RenderingEngine | T | Renders board |
+| K3 | InteractionController | A | Orchestrates game flow |
+| K4 | AnalysisService | A | Chess rules and validation |
+| K5 | PositionStore | 0 | Game state storage |
 
 ## Dependencies
 
-- K3 → K1 (Queries input state)
-- K3 → K2 (Sends render commands)
-- K3 → K4 (Validates moves)
-- K4 → K5 (Reads/writes state)
-
-## Data Flows
-
-- K1 → K3 (InputEvent)
-- K3 → K2 (RenderList)
+- K3 → K1, K2, K4 (K3 orchestrates all three)
+- K4 → K5 (rules engine reads/writes state)
+- K1 → K3 (events: input)
+- K3 → K2 (events: render)
 
 ## Diagram
 
@@ -30,34 +27,37 @@
 
 title MateMate Container View (C2)
 
-AddElementTag("technical", $bgColor="#E6F2FF", $borderColor="#1E5AA8")
-AddElementTag("application", $bgColor="#F1E6FF", $borderColor="#6A3FB2")
-AddElementTag("core", $bgColor="#F5F5F5", $borderColor="#777777")
+AddElementTag("technical", $bgColor="#B3D9FF", $borderColor="#1E5AA8", $fontColor="#000000", $legendText="T (Technical) - Cannot depend on A or 0")
+AddElementTag("application", $bgColor="#D9B3FF", $borderColor="#6A3FB2", $fontColor="#000000", $legendText="A (Application) - Can depend on T and 0")
+AddElementTag("core", $bgColor="#FFD699", $borderColor="#CC8800", $fontColor="#000000", $legendText="0 (Core) - Cannot depend on anything")
 
-AddRelTag("dependency", $lineStyle="SolidLine")
-AddRelTag("dataflow", $lineStyle="DashedLine")
+AddRelTag("dependency", $lineColor="#555555", $lineStyle="SolidLine", $legendText="Dependency (direct imports/calls)")
+AddRelTag("event", $lineColor="#0066CC", $lineStyle="DashedLine", $legendText="Event (pub/sub, no direct coupling)")
 
-Person(player, "Chess Player", "Human user")
+HIDE_STEREOTYPE()
+
+Person(player, "Chess Player", "Human user making moves")
 
 System_Boundary(matemate, "MateMate") {
-    Container(k1, "K1: InputAdapter", "Blood Type: T", "Captures OS input; exposes last click/drop", $tags="technical")
-    Container(k2, "K2: RenderingEngine", "Blood Type: T", "Renders primitives and positions from render lists", $tags="technical")
-    Container(k3, "K3: InteractionController", "Blood Type: A", "Interprets UI input as board intents", $tags="application")
-    Container(k4, "K4: AnalysisService", "Blood Type: A", "Chess logic: legality, validation, evaluation", $tags="application")
-    Container(k5, "K5: PositionStore", "Blood Type: 0", "Canonical game state and history", $tags="core")
+    Container(k1, "K1: InputAdapter", "OS Events", "Polls keyboard/mouse, translates to domain events", $tags="technical")
+    Container(k2, "K2: RenderingEngine", "2D Graphics", "Transforms Position to pixels, manages sprites/fonts", $tags="technical")
+    Container(k3, "K3: InteractionController", "Game Loop", "Main loop: reads input, updates state, triggers render", $tags="application")
+    Container(k4, "K4: AnalysisService", "Chess Engine", "Move validation, check/mate detection, legal moves", $tags="application")
+    Container(k5, "K5: PositionStore", "FEN + History", "Current board state, move history, game metadata", $tags="core")
 }
 
-Rel(player, k1, "Mouse/keyboard input")
-Rel(k2, player, "Rendered board")
+Rel(player, k1, "Clicks/drags pieces", "Mouse/keyboard")
+Rel(k2, player, "Displays board state", "Screen")
 
-Rel(k1, k3, "InputEvent", "Data flow", $tags="dataflow")
-Rel(k3, k2, "RenderList", "Data flow", $tags="dataflow")
+Rel_D(k1, k3, "InputEvent", $tags="event")
+Rel_D(k3, k2, "RenderCommand", $tags="event")
 
-Rel(k3, k1, "Queries input state", $tags="dependency")
-Rel(k3, k2, "Sends render commands", $tags="dependency")
-Rel(k3, k4, "Validates moves", $tags="dependency")
-Rel(k4, k5, "Reads/writes state", $tags="dependency")
+Rel_U(k3, k1, "isPressed(key)", $tags="dependency")
+Rel_D(k3, k2, "render(position)", $tags="dependency")
+Rel_R(k3, k4, "getLegalMoves()", $tags="dependency")
+Rel_D(k4, k5, "getPosition() / saveMove()", $tags="dependency")
 
-LAYOUT_WITH_LEGEND()
+SHOW_LEGEND()
+
 @enduml
 ```
