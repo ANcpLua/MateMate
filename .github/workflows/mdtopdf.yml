@@ -18,29 +18,49 @@ jobs:
           sudo apt-get install -y graphviz
           wget -q -O plantuml.jar https://github.com/plantuml/plantuml/releases/download/v1.2024.8/plantuml-1.2024.8.jar
 
-      - name: Generate PlantUML diagrams
+      - name: Setup Node.js (for Mermaid)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Mermaid CLI
+        run: npm install -g @mermaid-js/mermaid-cli
+
+      - name: Generate PlantUML and Mermaid diagrams
         run: |
           for dir in c4 arc42 docs req; do
             [ -d "$dir" ] || continue
             mkdir -p "$dir/images"
 
+            # Process .mmd files (Mermaid source files)
+            for mmd in "$dir"/*.mmd; do
+              [ -f "$mmd" ] || continue
+              basename_no_ext=$(basename "$mmd" .mmd)
+              img_name="${basename_no_ext}.png"
+
+              echo "Generating Mermaid from .mmd: $dir/images/${img_name}"
+              mmdc -i "$mmd" -o "$dir/images/${img_name}" -b transparent || true
+            done
+
+            # Process .md files for PlantUML diagrams (backward compatibility)
             for md in "$dir"/*.md; do
               [ -f "$md" ] || continue
 
-              # Find image reference in markdown (simple grep)
-              png=$(grep '!\[.*\](images/' "$md" | head -1 | sed 's/.*images\/\([^)]*\).*/\1/')
-              [ -z "$png" ] && png="$(basename "$md" .md).png"
+              basename_no_ext=$(basename "$md" .md)
 
-              # Extract PlantUML code block
-              sed -n '/^```plantuml$/,/^```$/p' "$md" | sed '1d;$d' > "$dir/images/${png%.png}.puml"
+              # Find image filename from markdown (e.g., "c1.png" from "![...](images/c1.png)")
+              img_name=$(grep '!\[.*\](images/' "$md" | head -1 | sed 's/.*images\/\([^)]*\).*/\1/' || echo "")
+              [ -z "$img_name" ] && img_name="${basename_no_ext}.png"
+              img_base="${img_name%.png}"
 
-              # Generate PNG if puml file has content
-              if [ -s "$dir/images/${png%.png}.puml" ]; then
-                echo "Generating $dir/images/${png%.png}.png"
+              # Extract and generate PlantUML diagrams
+              sed -n '/^```plantuml$/,/^```$/p' "$md" | sed '1d;$d' > "$dir/images/${img_base}.puml"
+              if [ -s "$dir/images/${img_base}.puml" ]; then
+                echo "Generating PlantUML: $dir/images/${img_name}"
                 java -DPLANTUML_SECURITY_PROFILE=ALLOWLIST \
                      -Dplantuml.allowlist.url="https://raw.githubusercontent.com/" \
-                     -jar plantuml.jar -tpng "$dir/images/${png%.png}.puml"
-                rm "$dir/images/${png%.png}.puml"
+                     -jar plantuml.jar -tpng "$dir/images/${img_base}.puml"
+                rm "$dir/images/${img_base}.puml"
               fi
             done
           done
@@ -68,8 +88,10 @@ jobs:
 
               for f in "$dir"/*.md; do
                 [ -f "$f" ] || continue
-                # Remove PlantUML code blocks, fix image paths
-                sed '/```plantuml/,/```/d' "$f" | sed "s|](images/|](${dir}/images/|g"
+                # Remove PlantUML and Mermaid code blocks, fix image and markdown link paths
+                sed '/```plantuml/,/```/d; /```mermaid/,/```/d' "$f" | \
+                  sed "s|](images/|](${dir}/images/|g" | \
+                  sed "s|](\([a-z0-9_-]*\.md\))|](${dir}/\1)|g"
                 echo ""
                 echo "---"
                 echo ""
@@ -82,15 +104,15 @@ jobs:
           sed -i "s|\](\([a-z0-9/_-]*\.md\))|](${REPO}/\1)|g" combined.md
           sed -i "s|\](\.\./\([^)]*\.md\))|](${REPO}/\1)|g" combined.md
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Convert to PDF and HTML
         run: |
           npm install -g md-to-pdf
           mkdir -p pdf
+
+          # Copy image directories BEFORE converting to PDF (for md-to-pdf to find them)
+          for dir in c4 arc42 req docs; do
+            [ -d "$dir/images" ] && mkdir -p "pdf/$dir" && cp -r "$dir/images" "pdf/$dir/"
+          done
 
           # Generate PDF
           md-to-pdf combined.md \
@@ -108,11 +130,6 @@ jobs:
           # Move outputs to pdf directory
           mv combined.pdf pdf/MateMate-Framework-Complete.pdf
           mv combined.html pdf/MateMate-Framework-Complete.html
-
-          # Copy image directories with correct structure for HTML
-          for dir in c4 arc42 req docs; do
-            [ -d "$dir/images" ] && mkdir -p "pdf/$dir" && cp -r "$dir/images" "pdf/$dir/"
-          done
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

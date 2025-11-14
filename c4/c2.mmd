@@ -1,0 +1,32 @@
+%%{init: {'theme':'base', 'scale': 0.75, 'themeVariables': { 'primaryColor':'#e3f2fd','primaryTextColor':'#0d47a1','primaryBorderColor':'#1976d2','lineColor':'#1565c0','secondaryColor':'#fff3e0','tertiaryColor':'#f3e5f5'}}}%%
+graph TB
+    Player([👤 Chess Player<br/>Human user<br/>making moves])
+
+    subgraph MateMate["🎮 MateMate"]
+        K1["⌨️ K1: InputAdapter<br/>OS Events<br/><br/>Polls keyboard/mouse,<br/>translates to domain events<br/><br/><b>Blood Type: T</b>"]
+        K2["🖼️ K2: RenderingEngine<br/>2D Graphics<br/><br/>Transforms Position to pixels,<br/>manages sprites/fonts<br/><br/><b>Blood Type: T</b>"]
+        K3["🎯 K3: InteractionController<br/>Game Loop<br/><br/>Main loop: reads input,<br/>updates state, triggers render<br/><br/><b>Blood Type: A</b>"]
+        K4["🧠 K4: AnalysisService<br/>Chess Engine<br/><br/>Move validation, check/mate<br/>detection, legal moves<br/><br/><b>Blood Type: A</b>"]
+        K5["💾 K5: PositionStore<br/>FEN + History<br/><br/>Current board state,<br/>move history, game metadata<br/><br/><b>Blood Type: 0</b>"]
+    end
+
+    %% User interactions
+    Player -->|Clicks/drags pieces<br/>via mouse/keyboard| K1
+    K2 -->|Displays board state<br/>on screen| Player
+
+    %% Events (dashed)
+    K1 -.->|InputEvent| K3
+    K3 -.->|RenderCommand| K2
+
+    %% Dependencies (solid)
+    K3 -->|isPressed: key| K1
+    K3 -->|render: position| K2
+    K3 -->|getLegalMoves| K4
+    K4 -->|getPosition /<br/>saveMove| K5
+
+    style Player fill:#9c27b0,stroke:#6a1b9a,color:#fff,stroke-width:3px
+    style K1 fill:#B3D9FF,stroke:#1E5AA8,color:#000,stroke-width:3px
+    style K2 fill:#B3D9FF,stroke:#1E5AA8,color:#000,stroke-width:3px
+    style K3 fill:#D9B3FF,stroke:#6A3FB2,color:#000,stroke-width:3px
+    style K4 fill:#D9B3FF,stroke:#6A3FB2,color:#000,stroke-width:3px
+    style K5 fill:#FFD699,stroke:#CC8800,color:#000,stroke-width:3px

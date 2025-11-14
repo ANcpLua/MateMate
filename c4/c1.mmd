@@ -1,0 +1,9 @@
+%%{init: {'theme':'base', 'scale': 0.75, 'themeVariables': { 'primaryColor':'#e3f2fd','primaryTextColor':'#0d47a1','primaryBorderColor':'#1976d2','lineColor':'#1565c0','secondaryColor':'#fff3e0','tertiaryColor':'#f3e5f5'}}}%%
+graph TB
+    Player([👤 Chess Player<br/>Human using<br/>mouse/keyboard])
+    MateMate["🎮 MateMate<br/><br/>Desktop chess application<br/>with full FIDE support"]
+
+    Player -->|Provides input and<br/>views board<br/>via Mouse/Keyboard| MateMate
+
+    style Player fill:#9c27b0,stroke:#6a1b9a,color:#fff,stroke-width:3px
+    style MateMate fill:#1976d2,stroke:#0d47a1,color:#fff,stroke-width:4px
