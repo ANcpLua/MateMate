@@ -4,8 +4,8 @@
 > **This repository has been archived.** All exercises are now consolidated in the [Software-Architecture](https://github.com/ANcpLua/Software-Architecture) repository for easier navigation.
 >
 > **Find MateMate exercises at:**
-> - Evening 3: [Service-Based Architecture (MateMate02)](https://github.com/ANcpLua/Software-Architecture/tree/main/evening-3/MateMate02-service-based-architecture)
-> - Evening 3: [Service Elicitation Results](https://github.com/ANcpLua/Software-Architecture/tree/main/evening-3/matemate-service-elicitation-results)
+> - Evening 3: [Service-Based Architecture (MateMate02)](https://github.com/ANcpLua/Software-Architecture/tree/main/Evening%203%20-%20Architecture%20Development/05-matemate-service-based-architecture)
+> - Evening 3: [Service Elicitation Results](https://github.com/ANcpLua/Software-Architecture/tree/main/Evening%203%20-%20Architecture%20Development/matemate-service-elicitation-results)
 
 **Extended Architecture Framework** combining C4 Model, arc42, and governance-oriented views for complete system
 documentation.
